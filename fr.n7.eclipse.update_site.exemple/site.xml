@@ -12,8 +12,12 @@
    <feature url="features/fr.n7.eclipse.feature.simplePDLToDot_1.0.0.202205211703.jar" id="fr.n7.eclipse.feature.simplePDLToDot" version="1.0.0.202205211703">
       <category name="N7 SimplePDLToDot"/>
    </feature>
+   <feature url="features/fr.n7.eclipse.feature.simplePDLToTINA_1.0.0.202205211727.jar" id="fr.n7.eclipse.feature.simplePDLToTINA" version="1.0.0.202205211727">
+      <category name="N7 SimplePDLToTINA"/>
+   </feature>
    <category-def name="N7 Exemple" label="N7 Exemple"/>
    <category-def name="N7 GLS" label="N7 GLS"/>
    <category-def name="N7 SimplePDLToHTML" label="N7 SimplePDLToHTML"/>
    <category-def name="N7 SimplePDLToDot" label="N7 SimplePDLToDot"/>
+   <category-def name="N7 SimplePDLToTINA" label="N7 SimplePDLToTINA"/>
 </site>
