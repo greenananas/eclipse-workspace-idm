@@ -1,4 +1,4 @@
-package simplepdl.ToPetriNetViaEMF;
+package simplepdl.toPetriNetViaEMF;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -209,7 +209,7 @@ public class SimplePDLToPetriNetViaEMF {
 	
 	public static void main(String[] args) {
 		if (args.length != 2)
-			throw new IllegalArgumentException("Usage: java ToPetriNetViaEMF <simplepdl_model_path> <petrinet_model_path>");
+			throw new IllegalArgumentException("Usage: java toPetriNetViaEMF <simplepdl_model_path> <petrinet_model_path>");
 		
 		Process process = loadProcess(args[0]);
 		
