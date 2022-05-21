@@ -1,0 +1,32 @@
+import 'SimplePDL.ecore'
+
+package simplepdl
+
+context ProcessElement
+def: process(): Process =
+	Process.allInstances()
+		->select(p | p.processElements->includes(self))
+		->asSequence()->first()
+
+context WorkSequence
+-- A dependency cannot be reflexive
+inv notReflexiveDependency(
+	'A reflexive dependency is created by Successor (' + self.successor.name + ') and predecessor (' + self.predecessor.name + ')'
+):
+	self.predecessor <> self.successor
+	
+context WorkDefinition
+-- Two different activities part of a same process cannot have the same name
+inv uniqueWorkDefinitionName('WorkDefinition name ' + self.name + ' already exists'):
+	self.process()
+	->select(e | e.oclIsKindOf(WorkDefinition))
+	->collect(e | e.oclAsType(WorkDefinition))
+	->select(e | self.name = e.name)
+	->size() = 1
+	
+-- The name of an activity must be made up of letters, digits or underscores, a digit cannot be in first position
+-- The name of an activity must me be made of at least two characters
+inv validWorkDefinitionName('Invalid name: ' + self.name):
+	self.name.matches('[A-Za-z_][A-Za-z0-9_]*')
+	
+endpackage

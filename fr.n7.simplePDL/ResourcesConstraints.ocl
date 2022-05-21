@@ -1,0 +1,34 @@
+import 'SimplePDL.ecore'
+
+package simplepdl
+
+context ProcessElement
+def: process(): Process =
+	Process.allInstances()
+		->select(p | p.processElements->includes(self))
+		->asSequence()->first()
+
+context Need
+-- An activity cannot:
+-- 	- need less than 1 resource
+-- 	- need more resources than available
+inv correctAmountNeededResources('A WorkDefinition cannot need less than 1 Resource OR more than "nbAvailableResources" Resources: ' + self.resource.name + ' for ' + self.workdefinition.name):
+	self.nbResources >= 1 and self.nbResources <= self.resource.nbAvailableResources
+
+context Need
+-- An activity and its needed resource must be in the same process
+inv resourceAndWorkDefinitionInSameProcess('Needed Resource and WorkDefinition are not in the same process: ' + self.resource.name + ' for ' + self.workdefinition.name):
+	self.resource.process() = self.workdefinition.process()
+	
+context Resource
+-- The name of an activity must be made up of letters, digits or underscores, a digit cannot be in first position
+-- The name of an activity must me be made of at least two characters
+inv validResourceName('Invalid Resource name: ' + self.name):
+	self.name.matches('[A-Za-z_][A-Za-z0-9_]*')
+
+context WorkDefinition
+-- Two needs for the same resource cannot exist in the same activity
+inv noDuplicateNeed('Two Needs with the same Resource should not exist for the same WorkDefinition'):
+	self.need->forAll(n1,n2 : Need | n1 <> n2 implies n1.resource.name <> n2.resource.name)
+
+endpackage

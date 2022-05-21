@@ -1,0 +1,58 @@
+import 'PetriNet.ecore'
+
+package petrinet
+
+context PetriElement
+def: petrinet(): PetriNet =
+	PetriNet.allInstances()
+		->select(n | n.petriElements -> includes(self))
+		->asSequence()->first()
+	
+context PetriNet
+inv validPetriNetName('Invalid PetriNet name: ' + self.name):
+	self.name.matches('[A-Za-z_][A-Za-z0-9_]*')
+	
+context Arc
+inv validArcPosition('All arcs should be between Place and Transition'):
+	(self.source.oclIsKindOf(Place)
+	 and self.target.oclIsKindOf(Transition))
+	 or (self.target.oclIsKindOf(Place)
+	 and self.source.oclIsKindOf(Transition))
+	 
+context Arc
+inv hasStrictPositiveWeight('Arc weight should be strictly positive'):
+	self.weight > 0
+	
+context Arc
+inv sourceAndTargetInSamePetriNet('Arc source and target should belong to the same PetriNet than the Arc'):
+	self.source.petrinet() = self.petrinet() and self.target.petrinet() = self.petrinet()
+
+context Arc
+inv arcFromTransitionIsNotReadArc('An Arc from a Transition cannot be a readArc'):
+	not (self.source.oclIsKindOf(Transition) and self.isReadArc)	
+
+context Place
+inv hasPositiveMarking('Place marking should be positive: ' + self.name):
+	self.marking >= 0
+	
+context Node
+inv validNodeName('Invalid Node name: ' + self.name):
+	self.name.matches('[A-Za-z_][A-Za-z0-9_]*')
+	
+context Node
+inv uniqueNodeName('Node name ' + self.name + ' already exists'):
+	self.petrinet().petriElements
+		->select(e | e.oclIsKindOf(Node))
+		->collect(e | e.oclAsType(Node))
+		->select(e | self.name = e.name)
+		->size() = 1
+	
+context Arc
+inv noRedundantNeed('Two Arcs with the same source and the same target should not exist'):
+	self.petrinet().petriElements
+	->select(e | e.oclIsKindOf(Arc))
+	->collect(e | e.oclAsType(Arc))
+	->select(e | self.source = e.source and self.target = e.target)
+	->size() = 1
+		
+endpackage
