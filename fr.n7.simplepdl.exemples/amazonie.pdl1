@@ -1,0 +1,17 @@
+process Amazonie {
+    create 4 of Singe
+    create 3 of Zoo 
+    
+    task Manger {
+        need 3 of Singe
+    }
+    
+    task Spectacler {
+        need 2 of Zoo
+    }
+    
+    dep finishToStart from Manger to Spectacler
+    
+    note "Je suis un bonobo" for Spectacler
+    note "Moi les bananes" for Manger,Spectacler
+}
