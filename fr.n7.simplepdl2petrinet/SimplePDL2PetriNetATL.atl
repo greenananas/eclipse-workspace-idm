@@ -1,0 +1,145 @@
+
+module SimplePDL2PetriNet;
+create OUT: petrinet from  IN: simplepdl;
+
+-- Obtenir le processus qui contient ce process element.
+-- Remarque: Ce helper ne serait pas utile si une référence opposite
+-- avait été placée entre Process et ProcessElement
+helper context simplepdl!ProcessElement
+def: getProcess(): simplepdl!Process =
+	simplepdl!Process.allInstances()
+		->select(p | p.processElements->includes(self))
+		->asSequence()->first();
+
+-- Traduire un Process en un PetriNet de même nom
+rule Process2PetriNet {
+	from p: simplepdl!Process
+	to pn: petrinet!PetriNet (name <- p.name)
+}
+
+-- Traduire une WorkDefinition en un motif sur le réseau de Petri
+rule WorkDefinition2PetriNet {
+	from wd: simplepdl!WorkDefinition
+	to
+		-- PLACES d'une WorkDefinition
+		p_ready: petrinet!Place(
+			name <- wd.name + '_ready',
+			marking <- 1,
+			petrinet <- wd.getProcess()
+		),
+		
+		p_running: petrinet!Place(
+			name <- wd.name + '_running',
+			marking <- 0,
+			petrinet <- wd.getProcess()
+		),
+		
+		p_started: petrinet!Place(
+			name <- wd.name + '_started',
+			marking <- 0,
+			petrinet <- wd.getProcess()
+		),
+		
+		p_finished: petrinet!Place(
+			name <- wd.name + '_finished',
+			marking <- 0,
+			petrinet <- wd.getProcess()
+		),
+		
+		-- TRANSITIONS d'une WorkDefinition
+		t_start: petrinet!Transition(
+			name <- wd.name + '_start',
+			petrinet <- wd.getProcess()
+		),
+		
+		t_finish: petrinet!Transition(
+			name <- wd.name + '_finish',
+			petrinet <- wd.getProcess()
+		),
+		
+		-- ARCS d'une WorkDefinition
+		a_ready2start: petrinet!Arc(
+			weight <- 1,
+			isReadArc <- false,
+			source <- p_ready,
+			target <- t_start,
+			petrinet <- wd.getProcess()
+		),	
+		
+		a_start2running: petrinet!Arc(
+			weight <- 1,
+			isReadArc <- false,
+			source <- t_start,
+			target <- p_running,
+			petrinet <- wd.getProcess()
+		),
+		
+		a_start2started: petrinet!Arc(
+			weight <- 1,
+			isReadArc <- false,
+			source <- t_start,
+			target <- p_started,
+			petrinet <- wd.getProcess()
+		),
+		
+		a_running2finish: petrinet!Arc(
+			weight <- 1,
+			isReadArc <- false,
+			source <- p_running,
+			target <- t_finish,
+			petrinet <- wd.getProcess()
+		),
+			
+		a_finish2finished: petrinet!Arc(
+			weight <- 1,
+			isReadArc <- false,
+			source <- t_finish,
+			target <- p_finished,
+			petrinet <- wd.getProcess()
+		)
+		
+}
+
+-- Traduire un ProcessElement en un motif sur le réseau de petri
+rule WorkSequence2PetriNet {
+	from ws: simplepdl!WorkSequence
+	to aws: petrinet!Arc(
+			weight <- 1,
+			isReadArc <- true,
+			source <- thisModule.resolveTemp(ws.predecessor, if(ws.linkType = #startToStart) or (ws.linkType = #startToFinish) then 'p_started' else 'p_finished' endif),
+			target <- thisModule.resolveTemp(ws.successor, if(ws.linkType = #startToStart) or (ws.linkType = #finishToStart) then 't_start' else 't_finish' endif),
+			petrinet <- ws.getProcess()
+	)
+}
+
+-- Traduire une Ressource en un motif sur le réseau de petri
+rule Resource2PetriNet {
+	from rs: simplepdl!Resource
+	to prs: petrinet!Place(
+			name <- rs.name + '_resource',
+			marking <- rs.nbAvailableResources,
+			petrinet <- rs.getProcess()
+	)
+}
+
+-- Traduire un Besoin en un motif sur le réseau de petri
+-- Remarque: Need n'hérite pas de ProcessElements : en l'occurrence, on doit passer
+-- par la Resource (ou la WorkDefinition) liée au Need pour récup le Process
+rule Need2PetriNet {
+	from ne: simplepdl!Need
+	to 
+		an_load: petrinet!Arc(
+				weight <- ne.nbResources,
+				isReadArc <- false,
+				source <- ne.resource,
+				target <- thisModule.resolveTemp(ne.workdefinition, 't_start'),
+				petrinet <- ne.resource.getProcess()
+		),
+		an_release: petrinet!Arc(
+				weight <- ne.nbResources,
+				isReadArc <- false,
+				source <- thisModule.resolveTemp(ne.workdefinition, 't_finish'),
+				target <- ne.resource,
+				petrinet <- ne.resource.getProcess()
+		)
+}
